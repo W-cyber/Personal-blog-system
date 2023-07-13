@@ -1,0 +1,1209 @@
+# 基础知识
+
+## HTTP
+
+1. HTTP协议是一种无状态的单通道非加密协议：
+
+   无状态：服务器端无法保存客户端状态，解决方法：通过Session（服务器端）和Cookie（浏览器端）解决，通过SessionID来进行约定
+
+   单通道：只有客户端主动向服务器发起请求时，服务器端才会被动响应，反过来不行，服务器端不能主动与客户端联系，解决方法：通过WebSocket解决双向长连接问题
+
+   非加密：HTTP传输过程为完全明文传输，解决办法：通过HTTPS协议解决
+
+2. HTTP协议请求类型：
+
+   GET请求：从服务器端获取资源、页面
+
+   POST请求：向服务器端发送数据
+
+   PUT请求：更新服务器端某个资源
+
+   DELETE请求：删除服务器端某个资源
+
+## Flask
+
+1. 功能：
+
+   1. 路由规则：定义后台接口标准，前端页面的请求能够发送给正确的服务器地址
+   2. 参数传递：接收前端页面发送过来的数据
+   3. URL重定向：当后台服务器处理完后需要重定向到一个新的页面，通过URL重定向功能实现
+   4. Session和Cookie：维护客户端与服务端状态
+   5. 模块化：Flask通过Blueprint模块实现网站模块化开发
+   6. 拦截器：后台服务器通过对前端发送过来的每一个请求进行拦截和检查，满足条件的处理，否则返回错误信息
+   7. 模板引擎：便捷地向HTML中填充数据，Flask引入了Jinja2模块引擎
+   8. 数据库操作：Flask引入SQLAlchemy框架操作MySQL数据库，底层基于PyMySQL库实现
+
+2. 优点：
+
+   ![image-20211205164236107](C:\Users\王阔\AppData\Roaming\Typora\typora-user-images\image-20211205164236107.png)
+   
+3. 设置静态资源路径为 '/'
+
+  ```python
+  app=Flask(__name__,static_url_path='/')#实例化一个Flask对象 设置静态资源路径为 /  （绝对路径）
+  ```
+
+  ```html
+  <link rel="stylesheet" href="/bootstrap.css" >
+  ```
+
+4. 设置静态资源和模板页面的文件夹
+
+```python
+app=Flask(__name__,static_folder='static',template_folder='tamplates')
+```
+
+5. app.run()参数
+
+   ```python
+   def run(self,host=None,port=None,debug=True)
+   host默认本机 port默认5000 debug默认开启
+   ```
+
+6. @app.route()参数
+
+   ```python
+   @app.route('/user/reg',methods=['POST','GET'])
+   #methods为请求列表，其中默认为GET请求
+   #若定义用户注册接口，需要使用POST请求
+   ```
+
+7. 关于请求参数的问题
+
+   1. URL地址自带的查询参数：http://127.0.0.1:5000/test?username=woniuxy&password=123456
+
+      2. 通过Flask自定义的路由规则和参数：http://127.0.0.1:5000/article/<articleID>
+
+         注：<articleID>代表可变项
+
+   3. POST请求的参数，通过POST正文传输
+
+8. 查询参数
+
+   ```python
+   #查询参数
+   @app.route('/test')
+   def test():
+   	username=request.args.get('username')
+       password=request.args.get('password')
+       return 'username %s password %s' % (username,password)
+   ''' 
+   request 请求
+   args 查询参数
+   get()获取
+   '''
+   ```
+
+9. 路由地址参数
+
+   ```python
+   #路由地址参数:路由地址参数必须同步定义在接口函数里面作为该函数的形参
+   @app.route('/article/<int:articleid>')
+   def article(articleid):
+       return f'你正在访问的文章编号为:{articleid}'
+   ```
+
+10. 直接读取POST请求正文参数
+
+    ```python
+    @app.route('/user/login',medthods=['POST'])
+    def login():
+        username=request.form.get('username') #正文请求函数
+        password=request.form.get('password')
+        if username=='woniu' and password=='123456':
+            return  '登录成功'
+        else:
+            return '登陆失败'
+    ```
+
+11. RESTful 接口定义规范
+
+    | 接口功能     | 请求类型 |   接口定义    | 备注                                                         |
+    | ------------ | -------- | :-----------: | ------------------------------------------------------------ |
+    | 查询所有文章 | GET      |   /article    | 地址只能是/article，不能附加其他内容，例如，/article/all不是有效的RESTful |
+    | 查询一篇文章 | GET      | /article/<id> | 必须指定文章ID进行查询                                       |
+    | 新增一篇文章 | POST     |   /article    | 地址仍然是/article，没有附加，非RESTful的地址风格很有可能写成/article/add，这个地址没有正确描述资源 |
+    | 删除一篇文章 | DELETE   | /article/<id> | 指定删除哪一篇ID文章，请勿使用/article/delete/<id>           |
+    | 修改一篇文章 | PUT      | /article/<id> | 对某一个ID的文章进行更新，更新的数据由PUT请求的正文指定，请勿使用/article/update/<id> |
+
+12. URL重定向
+
+    1. 是HTTP协议本身的功能，重定向302状态码，在响应头中通过location字段来告诉浏览器跳转
+
+       ```python
+       #使用Flask内置函数进行重定向
+       def red():
+           # return redirect(url_for('index')) #跳转到函数名的位置
+           return redirect('/') #跳转到响应路由地址
+       ```
+
+       ```python
+       #直接在响应中重定向
+       @app.route('/redjs')
+       def redjs():
+           html="感谢访问，两秒钟后跳转到首页"
+           html=" <script> "
+           html+= "setTimeout(function(){location.href='/';},2000)"
+           html+="</script> "
+           return  html
+       ```
+
+       
+
+13. Session          获取：session.get('role')
+    要处理Session必须为app实例配置SECRET_KEY实例，配置随机数生成器（Session ID）,在使用Session进行处理
+
+    ```python
+    #为app实例配置SECRET_KEY实例，配置随机数生成器（Session ID)
+    #SECRET_KEY 启用Session必须配置
+    import os
+    app.config['SECRET_KEY']=os.urandom(24) #生成随机数种子，用于产生SessionID
+    @app.route('/session')
+    def session():
+        session['username']='王阔'
+        session['role']='editor'
+        return 'Done'
+    @app.route('/sc/read')
+    def scread():
+        return '%s的角色为%s'%(session.get('username'),session.get('role'))
+    ```
+
+14. Cookie         获取request.cookies.get()
+
+    要处理Cooike ，需要使用response对象往HTTP的响应中写入满足HTTP协议的Cookie要求的信息（key,value,age<有效期>）
+
+    ```python
+    '''利用自定义响应的方式来浏览设置Cookie,cookie的获取：request.cookies.get()'''
+    @app.route('/cookie')
+    def cookie():
+         #构建一个响应的对象
+        response =make_response('这是一个cookie的操作')   #正文中的内容
+        response.set_cookie('username','王阔',max_age=30 )
+        response.set_cookie('password','123456',max_age=30)#最大生命周期30s
+         # 不能在同一个接口中既设置cookie又获取cookie
+         #错误：！！！  response.cookies.get('username')
+        return response
+    @app.route('/sc/read')
+    def scread():
+        return '用户%s的密码为%s'%(request.cookies.get('username'),request.cookies.get('password'))
+    ```
+
+15. 错误页面定制（404/500)
+
+    ```python
+    #定制404错误页面 请求的网页不存在
+    @app.errorhandler(404)
+    def page_not_found_404(e):
+        return render_template('error-404.html')
+    #定制500错误页面 500服务器内部错误
+    @app.errorhandler(500)
+    def page_not_found_500(e):
+        return render_template('error-500.html')
+    ```
+
+    
+
+## Jinja2 模板引擎
+
+语法：
+
+```html
+{% %}用于循环或判断语句
+{{ }}用于表达式的值的引用
+{# #}用于模板引擎的注释
+```
+
+示例：
+
+```html
+{% if count%2=0 %}
+<span>count可以被2整除</span>
+{% else %}
+<span>count不可以被2整除</span>
+{% endif %}
+```
+
+```html
+{# 模板引擎中定义变量要使用set关键字#}
+{% set loop=10 %}
+{% for i in range(loop) %}
+<span>当前循环到第{{i}}行</span>
+{% endfor%}
+```
+
+Jinja2的自定义函数
+
+1. 调用自定义函数
+
+   注意：此种方式需要：定义函数-传参-模板引擎调用
+
+   ```python
+   #自定义一个函数 供Jinja2 调用
+   def gettype():
+       type={'1':'PHP开发','2':'JAVA开发','3':'python开发'}
+       return type
+   @myhtml.route('/jinja2')
+   def jinja2():
+       type=gettype()
+       return render_template('myhtml.html',type=type)
+   # 在模板页面中调用{{type}}
+   ```
+
+   ```html
+   {# 调用#}
+   {{type}}
+   ```
+
+   
+
+ 2. 将函数注册到jinja2模板引擎中，返回字典数据
+
+    注意：此种方式需要：注册函数-定义函数-模板引擎调用
+
+    ```python
+    '''使用上下文处理器来注册自定义函数的到jinja2模板引擎中，并且返回一个字典类型的数据'''
+    @myhtml.context_processor
+    def gettype():
+        type = "{'1': 'PHP开发', '2': 'JAVA开发', '3': 'python开发'}"
+        return dict(mytype=type)
+    @myhtml.route('/jinja2')
+    def jinja2():
+        return render_template('myhtml.html')
+    ```
+
+    ```html
+    {#调用#}
+    {{mytype}}
+    ```
+
+3. 标准的函数调用的方式-----------常用-------------
+
+   ```python
+   #在main.py中 注册为全局变量
+   def gettype_02():
+       type = {'1': 'PHP开发', '2': 'JAVA开发', '3': 'python开发'}
+       return type
+   app.jinja_env.globals.update(mytype_02=gettype_02)
+   ```
+
+   ```html
+   {# 调用 #}
+   {{gettype_02()}}
+   
+   ```
+
+4. 注意！！！：如果要为自定义函数传参，则需要使用二层闭包进行包裹
+
+   ```python
+   @myhtml.context_processor
+   def myfunc():
+       def mytype():
+           type = {'1': 'PHP开发', '2': 'JAVA开发', '3': 'python开发'}
+           return type
+       return mytype
+   ```
+
+   ```html
+   {#调用#}
+   {{mytype(100)}}
+   ```
+
+过滤器
+
+1. 调用Jinja2原生过滤器
+
+   ```html
+   # myhtml.html文件
+   {{content|safe}}
+   {{content|length}}
+   {{content|int}}
+   ```
+
+2. 自定义过滤器函数
+
+   ```python
+   #main.py文件
+   def mylen(str):
+       return len(str)
+   app.jinja_env.filters.update(mylen=mylen)#全局注册过滤器
+   
+   ```
+
+   ```html
+   myhtml.html文件
+   <span>文章长度为：{{content|mylen}}</span>
+   ```
+
+   
+
+如果没有模板引擎 ， 如何渲染一个html页面？
+
+```python
+#将html内容保存到文件并标识模板变量，在渲染器前对模板变量的值进行替换
+#实现的python代码与模板页面分离
+@myhtml.route('/template03')
+def template03():
+    with open('template/myhtml.html',encoding='utf-8') as file:
+        html=file.read()
+        html=html.replace('name','wangkuo')
+        return html
+```
+
+## 重写truncate（jinja2的函数）
+
+```python
+#通过自定义过滤器来重构truncate原生过滤器
+def mytruncate(s,length,end='...'):
+    count=0
+    new=''
+    for c in s:
+        new+=c
+        if ord(c)<=128:
+            count+=0.5
+        else:
+                count+=1
+        if count>length:
+            break
+    return new+end
+app.jinja_env.filters.update(truncate=mytruncate)
+```
+
+
+
+## MVC分层模型
+
+1. MVC（Model View Controller）模型-视图-控制器，通过代码组织和分层，将业务逻辑、数据处理、界面显示进行分离，实现更高的重用性、维护性
+
+2. Model层：模型层负责处理应用程序中数据逻辑的部分，如：数据库操作
+
+   ```
+   根据业务要求来封装数据库操作，用于操作相应数据
+   ```
+
+3. Controller层：控制层负责从视图中读取数据，控制用户输入，向模型发送数据，即接口处理问题（业务处理）
+
+   ```
+   接收请求，处理业务，返回响应（HTML,JSON……）
+   ```
+
+4. View层：视图层负责程序中处理数据显示的问题，即：前端页面渲染问题
+
+   ```
+   由控制层发起模板填充的调用	
+   ```
+
+5. 数据库->业务处理->前端渲染 
+
+6. Model->Controller->View
+
+## jQuery
+
+1. jQuery是一个快速、简洁的JavaScript框架，其封装JavaScript常用的代码，优化HTML文档操作、事件处理、动画设计、Ajax交互等
+
+2. Bootstrap框架基于需要依赖于jQuery
+
+3. 功能：
+
+   1. DOM定位：jQuery的$("#id")和$(".class")进行单个或批量元素的选择，以及使用.val() 或.text()函数获取或修改元素或表单的内容
+
+      ```javascript
+      $("#id") 即 document.getElementById("id")
+      ```
+
+   2. 发请求：$.ajax()或$.post()通过Ajax方式发送请求并处理服务器响应结果
+
+   3. 按照元素的层次进行定位
+
+      .parent()获取父元素
+
+      .siblings()获取兄弟元素
+
+      .children()获取子元素
+
+   4. 修改HTML元素样式 .css()函数
+
+      ```javascript
+      .css('color','red') 即 element.style.color='red'
+      ```
+
+   5. 将HTML内容动态添加到另一个元素中append()
+
+## BootStrap
+
+https://v4.bootcss.com/
+
+1. 用于开发响应式布局、移动设备优先的WEB项目
+
+2. 组件库：BootStrap基于jQuery，可以开发一些常用功能如：模态窗口、弹窗提示、Tab选项卡、轮播图等
+
+3. 核心功能：栅格系统（快速实现响应式布局，PC端、移动端的适配）
+
+   ​	将网页分为12等份（宽度），将div分为三层，模拟<table><tr><td>
+
+   ​	第一层：container属性 (容器)
+
+   ​	第二层：row属性 (行)
+
+   ​	第三层：col属性  (列)
+
+   ![image-20211205175925553](C:\Users\王阔\AppData\Roaming\Typora\typora-user-images\image-20211205175925553.png)
+
+4. 用法
+
+   1. HTML导入
+
+      ```html
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" >
+      或
+      <link rel="stylesheet" href="../static/bootstrap.css" >
+      ```
+
+   2. CSS的媒体查询功能 响应式布局，更好兼容移动端
+
+      只有加了这个，浏览器才会去换算比例！
+
+      ```html
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      ```
+
+      注：width=device-width：当前窗口的宽度为设备的宽度
+      		initial-scale=1 ： 100%的视区窗口进行显示
+
+   3. 布局
+
+      ```html
+          <div class="container-fluid">
+          </div>
+          <div class="container">
+              <div class="row">
+                  <div class="col-sm-9 col-12">第一行第一列</div> PC端占9，手机端占12（满）
+                  <div class="col-sm-3 col-12">第一行第二列</div> PC端占3，手机端占12（满）
+              </div>
+          </div>
+      ```
+
+   4. 更改其内置css，使用在<style>中media媒体查询
+
+      ```html
+      <style>
+          /*当 当前屏幕宽度大于1300px时，则设置container为1300px
+          /*min-width: 1300px为条件 */
+          @media (min-width: 1300px){
+              .container{
+                  max-width: 1300px;
+              }
+          }
+      </style>
+      ```
+
+   
+   5. 显示和隐藏的切换     即 d 和block none的不同组合方式
+   
+      1. d-none所有屏幕隐藏 
+      2.  d-sm-block 在sm及以上尺寸的屏幕上显示
+      3.  d-sm-none  在sm及以上尺寸的屏幕上隐藏
+   
+      ```html
+      <!--           d-none 在移动端隐藏 d-sm-block  在sm及以上尺寸的屏幕上显示-->
+                  <div class="col-7 d-none d-sm-block " style="padding-top:15px;text-align:right;border:none;font-size:32px">以蜗牛之名，行学习之实</div>
+      <!--           d-sm-none 在sm及以上尺寸的屏幕隐藏-->
+                  <div class="col-7 d-sm-none" style="padding-top:15px;text-align:right;border:none;font-size:32px">技术博客</div>
+      ```
+   
+   6. 内置div靠右对齐（ml-auto）和靠左对齐(mr-auto)
+   
+5. 引用图标库 icon
+
+   ```
+   <link rel="stylesheet" href="/icon/font/css/open-iconic-bootstrap.css">
+   
+   <div class="col-3 favorite" ><label><span class="oi oi-heart" aria-hidden="true"></span> 收藏文章</label></div>
+   
+   ```
+
+   
+
+## Bootbox 弹窗
+
+1.  基于BootStrap的弹窗：www.bootboxjs.cn
+
+## UEditor 在线编辑器
+
+http://fex.baidu.com/ueditor/
+
+1. 引入的包
+
+   ```html
+   <script type="text/javascript" src="/ue/ueditor.config.js"></script>
+   <script type="text/javascript" src="/ue/ueditor.all.min.js"> </script>
+   <script type="text/javascript" src="/ue/lang/zh-cn/zh-cn.js"></script>
+   ```
+
+2. 实例化UEditor对象
+
+   ```html
+   <script type="text/javascript">
+       //初始化一个ueditor的实力对象 与id为content的相关联
+       var ue=UE.getEditor('content',{
+           initialFrameHeight:400,//初始化高度400px
+           autoHeightEnabled:flase//设置高度不随着文字多少而变化
+       });
+   </script>
+   ```
+
+3. 引用
+
+   ```html
+   <div class="col-12">
+       <script id="content" type="text/plain"></script>
+   </div>
+   ```
+
+   
+
+## CSS
+
+1. ```
+   标识一个id #id     
+   标识一个类. class
+   ```
+
+   
+
+2. 样式表的层级关系
+
+   ```css
+   /*表示类footer下的样式*/
+   .footer {
+   background-color: #333333;
+   margin-top: 20px;
+   margin-bottom: 0px;
+   padding: 0px;
+   border-radius: 0px;
+   color: white;
+   }
+   /*表示类footer下 类left的样式*/
+   .footer .left {
+   font-size: 16px;
+   margin: 20px 0px;
+   }
+   /*表示footer下所有div的样式*/
+   .footer div{
+   font-size: 16px;
+   margin: 20px 0px;
+   }
+   ```
+
+   
+
+3. padding-top:父容器主动远离子容器
+
+2. margin-top:子容器主动远离父容器
+
+​	![image-20211206102223352](C:\Users\Admin\AppData\Roaming\Typora\typora-user-images\image-20211206102223352.png)
+
+3. 设置导航栏（菜单）的样式 CSS
+
+   ```css
+   .menu{
+       border-top:solid 2px orange ;
+       background-color:#563d7c;
+   }
+   注：.menu下的上边颜色，背景颜色
+   .menu .menu-bar a:link,.menu .menu-bar a:visited{
+       color: white;
+   }
+   注：.menu .menu-bar a:link   是 menu下menu-bar 的超链接（a标签）的样式
+   ```
+
+   4. padding是子容器和父容器之间
+   
+      ```css
+      padding: 2px 10px 0 0 上右下左（顺时针）
+      padding-top:2px
+      padding-right:10px
+      padding-bottom:0px
+      pdding-left:0px
+      ```
+   
+      
+   
+   5. margin 是div之间的间距
+   
+      ```html
+      <div class="col-12" style="height:150px;border: solid 2px black;margin:10px 0px">文章1</div>
+      <div class="col-12" style="height:150px;border: solid 2px black;margin:10px 0px">文章2</div>
+      <div class="col-12" style="height:150px;border: solid 2px black;margin:10px 0px">文章3</div>
+      ```
+   
+   6. <ul><li></li></ul>标签的调整（去掉点等）
+   
+   7. 文本靠右（左/居中）对齐
+   
+      ```css
+       text-align：right;
+       text-align：left;
+       text-align：center;
+      或
+      height:40px;
+      line-height:40px;/*设置行高=高度  即 居中*/
+      ```
+   
+   8. 为 全局的 label 标签设置一个可点的选项
+   
+      ```css
+      label{
+          cursor:pointer;
+      }
+      ```
+
+## HTML
+
+1. input 标签的 class="form-control" 文本框填满整个区域
+
+   ```html
+   <input type="text" id="nickname" class="form-control"/>
+   ```
+
+2. label标签 的for=“id” 可以绑定id，实现点击文字 文本框高亮的功能
+
+   ```html
+   <label for="nickname">你的昵称:</label>
+   <input type="text" id="nickname" class="form-control"/>
+   ```
+
+## BluePrint 模块化处理
+
+1. 原始方式
+
+   ```python
+   #controller下demo.py文件
+   from main import app
+   @app.route('/demo')
+   def demo():
+       return 'This is the other html'
+   ```
+
+   ```python
+   #main.py文件
+   from controller.demo import *
+   ```
+
+2. BluePrint
+
+   ```python
+   #controller下demo.py文件
+   from flask import Blueprint
+   demo=Blueprint('demo',__name__)
+   @demo.route('/demo')
+   def demo():
+       return 'This is the other html'
+   ```
+
+   ```python
+   #main.py文件
+   if __name__ == '__main__':
+       #引入demo.py文件并注册
+       from controller.demo import *
+       app.register_blueprint(demo) #使用Blueprint时，必须将其注册到app中
+       app.run(debug=True)
+   ```
+
+## 拦截器
+
+对接口请求进行预先处理
+
+1. 全局拦截器，应用于Flask实例（app）中，对所有经过当前系统的请求进行拦截检查
+
+   1. 全局拦截器：要设置好白名单，让无需检查的接口方形
+   2. 全局拦截器：由于会检查每个请求，会导致心梗的下降
+
+   ```python
+   #main.py文件中
+   #针对app实例定义全局拦截器
+   @app.before_request
+   def before():
+       url=request.path    #获取到当前接口的地址
+       if url=='/session':
+           pass
+       elif session.get('islogin')=='true':
+           return '你还未登录，无法访问接口'
+       else:
+           pass
+       #如果用户已经登录 不拦截 否则拦截
+   '''
+            白名单：所有静态资源（JS，Image，CSS）
+      		登录或者跟用户操作有权限要求的接口前作的操作，必须放行
+   '''
+   ```
+
+   
+
+2. 模块拦截器，只针对某一个模块的请求进行拦截，应用于Blueprint模块中
+
+   ```python
+   #demo.py文件中
+   @demo_.before_request
+   def demo_before():
+       url= request.path
+       if url=='/demo1':
+           return '禁止访问'
+   ```
+
+## 模板继承
+
+在母版文件中
+
+```html
+{% block content%}
+{% end block %}
+```
+
+在继承文件中
+
+```
+{% extends 'base.html' %}
+{% block content %}
+……………………………………
+……………………………………
+{#按需引入 side.html无需任何处理 #}
+{% include 'side.html' %}
+
+{%end block%}
+```
+
+
+
+## 数据库操作
+
+1. 所有的I/O操作：文件，数据库，网络等都有如下操作步骤：打开数据流-处理-关闭数据流
+
+   数据库操作步骤：
+   第一步：连接数据库
+   第二步：执行sql语句
+   第三步：关闭数据库
+
+2. 数据库操作步骤：
+
+   1. 连接数据库
+
+      ```python
+      conn=pymysql.connect(host='39.104.207.156',port=3306,user='root',password='123456',charset='utf8',database='wangkuo',autocommit=True)
+      ```
+
+   2. 执行sql语句
+
+      ```python
+      #1.实例化一个游标对象 2.定义SQL语句 3.通过游标执行 4.处理执行结果
+      cursor=conn.cursor(DictCursor)
+      sql="select * from users"
+      cursor.execute(sql)
+      result=cursor.fetchall()#获取查询结果：fetchone 第一条/fetchmany 获取n行/fetchall 所有
+      print(result)
+      for row in result:
+          print(row['name'])
+      ```
+
+      ```python
+      注意：若不设置autocommit=True 则 更新操作需要提交
+      sql="update users set userID='20194057127' where name='wangkuo '"
+      cursor.execute(sql)
+      conn.commit()#提交
+      ```
+
+
+
+## 数据库+分页功能的实现
+
+```python
+#database.py
+from sqlalchemy import MetaData
+def dbconnect():
+    from main import  db
+    dbsession=db.session
+    DBase=db.Model
+    metadata=MetaData(bind=db.engine)
+    return (dbsession,metadata,DBase)
+```
+
+```python
+#article.py
+from sqlalchemy import Table
+from module.users import Users
+from common.database import dbconnect
+dbsession,md,DBase=dbconnect()
+class Article(DBase):
+    __table__=Table('article',md,autoload=True)
+
+    #查询所有文章
+    def find_all(self):
+        result=dbsession.query(Article).all()
+    def find_by_id(self,articleid):
+        row=dbsession.query(Article).filter_by(articleid=articleid).first()
+        return row
+    #指定分页的limit和offset的参数值，同时与用户表连接查询
+    def find_limit_with_user(self,start,count):
+         result=dbsession.query(Article,Users.nickname).join(Users,Users.userid==Article.userid)\
+             .filter(Article.hidden==0,Article.drafted==0,Article.checked==1)\
+             .order_by(Article.articleid.asc()).limit(count).offset(start).all()
+         return result
+    #获取文章总数量
+    def get_total_count(self):
+        count=dbsession.query(Article)\
+            .filter(Article.hidden==0,Article.drafted==0,Article.checked==1).count()
+        return count
+    #根据文章类型获取文章
+    def find_by_type(self,type,start,count):
+         result=dbsession.query(Article,Users.nickname)\
+             .join(Users,Users.userid==Article.userid)\
+             .filter(Article.hidden==0,Article.drafted==0,Article.checked==1,Article.type==type)\
+             .order_by(Article.articleid.asc()).limit(count).offset(start).all()
+         return result
+    #获取文章类型总数量
+    def get_count_by_type(self,type):
+        count=dbsession.query(Article)\
+            .filter(Article.hidden==0,Article.drafted==0,Article.checked==1,Article.type==type).\
+            count()
+        return count
+
+```
+
+```py
+#user.py
+from sqlalchemy import Table
+from common.database import dbconnect
+
+dbsession,md,DBase=dbconnect()
+
+class Users(DBase):
+    __table__=Table('users',md,autoload=True)
+    pass
+```
+
+```python
+#index.py
+from flask import Blueprint,render_template
+import math
+from module.article import Article
+
+index=Blueprint("index",__name__)
+
+@index.route('/')
+def home():
+    article=Article()
+    result=article.find_limit_with_user(0,10)
+    total=math.ceil(article.get_total_count()/5) #向上取整
+    print(result)
+    return  render_template('index.html',result=result,total=total,page=1)
+@index.route('/page/<int:page>')
+def paginate(page):
+    start=(page-1)*5
+    article=Article()
+    result=article.find_limit_with_user(start,5)
+    total=math.ceil(article.get_total_count()/5) #向上取整
+    return  render_template('index.html',result=result,total=total,page=page)
+
+@index.route('/type/<int:type>-<int:page>')
+def classify(type,page):
+    start=(page-1)*5
+    article=Article()
+    result=article.find_by_type(type,start,5)
+    total=math.ceil(article.get_count_by_type(type)/10)
+    return render_template('type.html',result=result,total=total,page=page,type=type)
+
+```
+
+## 搜索功能实现
+
+## 魔术方法
+
+常用：
+
+```
+__dict__、__setatrr__,__getattribute__	
+```
+
+```python
+class User:
+    table_name='users' #类属性
+    def __init__(self):
+        self.username='qiang'#实例变量
+        self.password='123456'
+        self.email='232443@qq.com'
+    def method(self,value):
+        print('hello %s' % value)
+    #链式操作
+    def chain(self): 
+        print('chain')
+        return self
+    def hello(self):
+        print('Hello')
+        return self
+if __name__=='__main__':
+    user=User()
+    print(User.__dict__)  #通过类名可以直接获取到类的属性和方法列表
+    print(user.__class__)  #通过实例可以获取到对应的类
+    print(user.__class__.__dict__)
+```
+
+1. 动态为实例设置属性
+
+   ```python
+   #1.
+   user.__setattr__('nickname','强哥')
+   #2.
+   setattr(user,'nickname','强哥')	
+   ```
+
+2. 获取实例属性
+
+   ```python
+   user.__getattribute('nickname')
+   ```
+
+3. 函数传参
+
+   ```python
+   #1.获取函数地址传参
+   user.__getattribute__('method')('成都')
+   #2.
+   getattr(user,'method')('北京')
+   ```
+
+4. 链式调用
+
+   ```python
+   user.chain().chain().hello().chain()
+   ```
+
+## 自定义ORM框架
+
+1. ORM（Object Relational Mapping） 对象-关系映射
+
+2. ORM实质：将关系型数据（二维表 ）转换成python对象；进而实现数据库的操作对象化，减少或完全不用编写SQL语句
+
+   ```
+   数据库中的表->python类
+   表中的列->类中的属性
+   表中的行->类的实例，字典对象表述
+   字典对象的key对应列，value对应值
+   
+   进而对增删改查进行封装
+   ```
+
+3. 封装示例：
+
+   封装sql语句
+
+   ```python
+   class MySQL:
+       def __init__(self):
+           #实例化即创建与数据库之间的连接
+           conn = pymysql.connect(host='39.104.207.156', port=3306, user='root', password='123456', charset='utf8',
+                                  database='wangkuo', autocommit=True)
+           self.cursor=conn.cursor(DictCursor)
+       #封装基础查询语句
+       def query(self,sql):
+           self.cursor.execute(sql)
+           result=self.cursor.fetchall()
+           return  result
+       #执行修改操作
+       def execute(self,sql):
+           try:
+               self.cursor.execute(sql)
+               return 'OK'
+           except:
+               return 'Fail'
+   class Users:
+       table_name='users' #定义表名
+       #构造方法，传递字典参数作为Insert的key和value
+       def __init__(self,**kwargs):
+           for k,v in kwargs.items():
+               self.__setattr__(k,v)
+           print(self.__dict__)
+       #封装查询操作
+       def select(self,**where):#字典参数
+           sql="select * from %s " % self.table_name
+           if where is not None:
+               sql+="where"
+               for k,v in where.items():
+                   sql+=" %s='%s' and" % (k,v)
+               sql+=' 1=1'
+           print(sql)
+           result=MySQL().query(sql)
+           return result
+       
+       #封装新增操作 insert into table(c1,c2) values(v1,v2)
+       #因此需要将获取的数据重构
+       def insert(self):
+           keys=[]
+           values=[]
+           for k,v in self.__dict__.items():
+               keys.append(k)
+               values.append(v)
+           sql="insert into %s(%s) values('%s')"%(self.table_name,' ,'.join(keys),"','".join(values))
+           print(sql)
+           result=MySQL().execute(sql)
+           print(result)
+   
+   if __name__=='__main__':
+       user =Users(userID='1',name='wangkuo')
+       user.insert()
+   #    result=user.select('userID=20194057127')
+      # print(result)
+   
+   ```
+
+# 项目功能结构
+
+![image-20211205162843265](C:\Users\王阔\AppData\Roaming\Typora\typora-user-images\image-20211205162843265.png)
+
+# 构建前端页面
+## 前端开发步骤
+1.  UI设计
+2. 绘制线框图
+3.  填充页面内容
+    1.  通过实现前端页面进行内容的静态填充
+    2.  基于后台进行页面的动态填充：循环+分页，填充对应字段的值，实现前后端交互
+
+4.  对内容进行微调
+    1.  检验、接口权限、关系
+
+
+
+
+## 线框图 框架
+
+![线框图](D:\桌面\笔记\线框图.png)
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+<!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" >-->
+    <link rel="stylesheet" href="/bootstrap.css" >
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+        @media (min-width: 1300px){
+            .container{
+                max-width: 1300px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!--最顶部-->
+    <div class="container">
+        <div class="row">
+            <div class="col-12" style="height:100px;border: solid 2px red;"> </div>
+        </div>
+    </div>
+<!--导航栏-->
+    <div class="container-fluid" >
+        <div class="row">
+            <div class="col-12" style="height:50px;border: solid 2px red;"></div>
+        </div>
+    </div>
+<!--正文部分-->
+<!--高度自适应.-->
+    <div class="container">
+        <div class="row">
+<!--        左侧文章-->
+            <div class="col-sm-9 col-12" style="border:none;padding-left:0px">
+                <div class="col-12" style="height:200px;border: solid 2px black;">轮播图</div>
+                <div class="col-12" style="height:200px;border: solid 2px black;">文章1</div>
+                <div class="col-12" style="height:200px;border: solid 2px black;">文章2</div>
+            </div>
+<!--        右侧小窗-->
+            <div class="col-sm-3 col-12" style="border: none;padding-right:0px">
+<!--            搜索栏-->
+                <div class="col-12" style="height:50px;border: solid 2px black;">搜索</div>
+<!--            文章推荐-->
+                <div class="col-12" style="height:400px;border: solid 2px black;">文章推荐</div>
+
+            </div>
+        </div>
+    </div>
+<!--页脚-->
+    <div class="container-fluid" >
+        <div class="row">
+            <div class="col-12" style="height:100px;border: solid 2px red;"></div>
+        </div>
+    </div>
+</body>
+</html>
+```
+
+
+
+
+
+
+
+
+
+# 数据库设计
+
+1. 设计
+
+   1. 用户表：用户名 、密码、联系方式、昵称……
+
+   2. 文章表：用户编号、用户名（外键）标题、内容、类别、日期、阅读次数、积分、隐藏文章（软删除）、审核、推荐标记……
+
+   3. 积分表：用户与文章之间的第三张表（在积分阅读上，建立用户表与文章表之间多对多的关系）、用户编号、文章编号、消耗积分（外键）
+
+      注：一篇文章 用户只需消耗一次积分
+
+   4. 收藏表：用户编号、文章编号、取消
+
+      用户与文章之间的第四张表（在收藏文章上，建立用户表与文章表之间多对多的关系）
+
+   5. 评论表：用户编号、文章编号、内容、时间
+
+      ​	![user表](D:\桌面\笔记\图片\user表.png)
+
+      ![收藏表](D:\桌面\笔记\图片\收藏表.png)
+
+      ![评论表](D:\桌面\笔记\图片\评论表.png)
+
+      ![积分表](D:\桌面\笔记\图片\积分表.png)
+
+      ![文章表](D:\桌面\笔记\图片\文章表.png)
+
+3. 创建数据库
+
+```
+字符集：utf8mb4   //mysql
+排序规则：utf8mb4_general_ci  //不区分大小写（大小写不敏感）
+```
+
+
+
+## 用户登录注册实现
+
+1. 验证码：图片、邮箱、短信验证码
+
+2. 实现原理：前端输入--后台接收地址进而生成随机验证码（同时将验证码保存：Session临时保存，文件、数据库、缓存服务器   ）--返回给用户--用户填写并提交到后台--后台校验
+3. 验证码作用：
+   1. 防止自动化代码（爬虫、恶意脚本）来直接发送请求
+   2. 确认用户信息的真实性：邮箱地址、手机号码
+4. 图片验证码的实现：
+   1. 绘制基础图片：使用pillow将随机验证码文本绘制成一张图片。字体，变形，干扰线等
+      1. 生成随机字符串
+      2. 对文字的基本处理：颜色、字体、变形等
+      3. 
+   2. 将验证码图片响应给前段，供前端用户识别并提交给服务器
+   3. 校验。成功则执行后续代码，否则用户重新提交
+
+5. 邮箱验证码的实现：
+   1. 需要有支持邮件发送或接受的模块
+   2. 需要一台支持邮件发送的邮箱服务器（QQ邮箱服务器）：收件人，发件人，邮箱服务器地址，端口，账号
+   3. 校验
+
+6. 注册
+   1. 向users表插入一条记录
+   2. 新用户赠送50积分
+   3. 向credit表插入一条积分详情
+   4. 用户注册成功直接保存登陆状态

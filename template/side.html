@@ -1,0 +1,125 @@
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+
+<!--        右侧边栏-->
+<div class="col-sm-3 col-12" style="border: none;padding-right:0px;padding-top:15px;" id="side">
+    <!-- 搜索栏-->
+    <div class="col-12 search-bar form-group row">
+        <div class="col-8">
+            <input type="text" class="form-control" id="keyword" placeholder="请输入关键字" onkeyup="doSearch(event)">
+        </div>
+        <div class="col-4">
+            <button type="button" class="btn btn-primary" onclick="doSearch()">搜索</button>
+        </div>
+    </div>
+    <!--            最新文章-->
+    <div class="col-12 side">
+        <div class="col-12 tip">最新文章</div>
+        <ul id="last">
+            <li v-for="(article,index) in content">
+                <a :href=" '/article/'+article[0]">${index+1}. ${article[1].substr(0,16)}...</a>
+            </li>
+
+        </ul>
+    </div>
+    <!--            最多访问-->
+    <div class="col-12 side">
+        <div class="col-12 tip">最多访问</div>
+        <ul id="most">
+            <li v-for="(article,index) in content">
+                <a :href=" '/article/'+article[0]">${index+1}. ${article[1].substr(0,16)}...</a>
+            </li>
+        </ul>
+    </div>
+    <!--            特别推荐-->
+    <div class="col-12 side" id="fixedmenu">
+        <div class="col-12 tip">特别推荐</div>
+        <ul id="recommended">
+            <li v-for="(article,index) in content">
+                <a :href=" '/article/'+article[0]">${index+1}. ${article[1].substr(0,16)}...</a>
+            </li>
+        </ul>
+        <div class="col-12 side" onclick="gotoTop()" style="height:50px;margin:0px;text-align:center">
+            <h3> 回到顶部</h3>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    function doSearch(e){
+        if (e!=null && e.keyCode!=13){
+            return false;
+        }
+        var keyword=$.trim($("#keyword").val());
+        if(keyword.length==0||keyword>10||keyword.indexOf('%')>=0){
+            bootbox.alert({'title':'错误信息','message':'搜索关键字不合法'});
+            $("#keyword").focus();
+            return false;
+        }//keyword.indexOf('%') 百分号在keyword中的位置  筛除百分号
+
+        location.href='/search/1-'+ keyword;
+     }
+//jQuery 文章加载完成后开始执行，无需按钮或事件触发
+     $(document).ready(function(){
+     //第一步 发送Ajax请求去访问/recommend接口,获取JSON
+        $.get('/recommend',function(data){
+// 获取响应并动态填充到对应的推荐栏中
+            var lastData = data[0];
+            var mostData = data[1];
+            var recommendedData = data[2];
+            var v1=new Vue({
+                el:'#last',
+                data:{content:lastData},
+                delimiters:[ '${' , '}']
+            })
+            var v2=new Vue({
+                el:'#most',
+                data:{content:mostData},
+                delimiters:[ '${' , '}']
+            })
+            var v3=new Vue({
+                el:'#recommended',
+                data:{content:recommendedData},
+                delimiters:[ '${' , '}']
+            })
+       })
+     });
+     $(document).ready(function(){
+        // 利用浏览器的user-agent属性判断浏览器类型
+        var userAgentInfo = navigator.userAgent.toLowerCase();
+        var agents = ["android", "iphone", "symbianOS", "windows phone", "ipad", "ipod"];
+        var flag = true;    // 表示是PC端
+        for (var v = 0; v < agents.length; v++) {
+            if (userAgentInfo.indexOf(agents[v]) >= 0) {
+                flag = false;   // 表示这是移动端
+                break;
+            }
+        }
+
+    // 是PC端时才进行右侧停靠
+        if (flag == true) {
+            var fixedDiv = document.getElementById("fixedmenu");
+            var H = 0;
+            var Y = fixedDiv;
+            while (Y) {
+                H += Y.offsetTop;
+                Y = Y.offsetParent;
+            }
+
+            window.onscroll = function () {
+                var s = document.body.scrollTop || document.documentElement.scrollTop;
+                if (s > H + 500) {
+                    fixedDiv.style = "position:fixed; top:0; margin-top:0; width: 306px;";
+                } else {
+                    fixedDiv.style = "";
+                }
+            }
+        }
+
+});
+
+function gotoTop() {
+    $('html, body').animate({scrollTop: 0}, 800);
+    return false;
+}
+
+
+</script>

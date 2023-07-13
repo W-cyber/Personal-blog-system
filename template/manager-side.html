@@ -1,0 +1,19 @@
+        <div class="col-sm-2 col-12" style="padding: 0px 10px; ">
+            <div class="col-12 admin-side" style="height: 320px">
+                <!-- 为左侧菜单栏添加正确的超链接 -->
+                <ul id="ucenter-content" >
+                    <li><a href="/ucenter"><span class="oi oi-heart" aria-hidden="true"></span>&nbsp;&nbsp;我的收藏</a></li>
+                    {% if session.get('role') == 'user' %}
+                    <li><a href="/user/prepost"><span class="oi oi-zoom-in" aria-hidden="true"></span>&nbsp;&nbsp;我要投稿</a></li>
+                    <!-- 普通用户投稿，作者角色直接发布文章 -->
+                    {% elif session.get('role') == 'editor' %}
+                    <li><a href="/prepost"><span class="oi oi-zoom-in" aria-hidden="true"></span>&nbsp;&nbsp;发布文章</a></li>
+                    <li><a href="/user/mydraft"><span class="oi oi-book" aria-hidden="true"></span>&nbsp;&nbsp;我的草稿</a></li>
+                    {% endif %}
+                    <li style="list-style:none;"><a href="/user/myarticle"><span class="oi oi-shield" aria-hidden="true"></span>&nbsp;&nbsp;我的文章</a></li>
+                    <li><a href="/user/mycomment"><span class="oi oi-task" aria-hidden="true"></span>&nbsp;&nbsp;我的评论</a></li>
+                    <li><a href="/user/info"><span class="oi oi-person" aria-hidden="true"></span>&nbsp;&nbsp;个人资料</a></li>
+<!--                    <li><a href="/user/credit"><span class="oi oi-account-login" aria-hidden="true"></span>&nbsp;&nbsp;我的积分</a></li>-->
+                </ul>
+            </div>
+        </div>
